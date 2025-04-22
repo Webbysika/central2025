@@ -1,0 +1,615 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <link rel="stylesheet" href="css/leaflet.css"><link rel="stylesheet" href="css/L.Control.Locate.min.css">
+        <link rel="stylesheet" href="css/qgis2web.css"><link rel="stylesheet" href="css/fontawesome-all.min.css">
+        <link rel="stylesheet" href="css/leaflet-search.css">
+        <link rel="stylesheet" href="css/leaflet-control-geocoder.Geocoder.css">
+        <link rel="stylesheet" href="css/leaflet-measure.css">
+        <style>
+        html, body, #map {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+        }
+        </style>
+        <title></title>
+    
+<!-- Custom Improvements -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
+
+<style>
+  body {
+    font-family: 'Inter', sans-serif;
+  }
+  #map {
+    height: 100vh !important;
+  }
+  .custom-sidebar {
+    position: absolute;
+    top: 60px;
+    right: 10px;
+    z-index: 1000;
+    background-color: white;
+    padding: 12px;
+    border-radius: 8px;
+    max-width: 300px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+  }
+</style>
+
+<script>
+function showInfo(properties) {
+  const infoDiv = document.getElementById('sidebar-info');
+  if (!properties) {
+    infoDiv.innerHTML = "<em>Click a feature to view details.</em>";
+    return;
+  }
+  let html = "<h6><strong>" + (properties.CONST_NAME || properties.Name || "Details") + "</strong></h6><ul>";
+  for (const key in properties) {
+    html += `<li><strong>${key}:</strong> ${properties[key]}</li>`;
+  }
+  html += "</ul>";
+  infoDiv.innerHTML = html;
+}
+
+function onEachFeature(feature, layer) {
+  layer.on({
+    click: function () {
+      showInfo(feature.properties);
+    }
+  });
+}
+</script>
+<!-- Sidebar Style and Feature Click Script -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
+
+<style>
+  body {
+    font-family: 'Inter', sans-serif;
+  }
+  #map {
+    height: 100vh !important;
+  }
+  .custom-sidebar {
+    position: absolute;
+    top: 60px;
+    right: 10px;
+    z-index: 1000;
+    background: white;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+    width: 280px;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+</style>
+
+<script>
+function showInfo(properties) {
+  const infoDiv = document.getElementById('sidebar-info');
+  if (!properties) {
+    infoDiv.innerHTML = "<em>Click a feature to view details here.</em>";
+    return;
+  }
+  let html = "<h6><strong>" + (properties.CONST_NAME || properties.Name || "Feature") + "</strong></h6><ul>";
+  for (const key in properties) {
+    html += `<li><strong>${key}:</strong> ${properties[key]}</li>`;
+  }
+  html += "</ul>";
+  infoDiv.innerHTML = html;
+}
+
+function onEachFeature(feature, layer) {
+  layer.on('click', function () {
+    showInfo(feature.properties);
+  });
+}
+</script>
+
+</head>
+    <body>
+        <div id="map"><div class="custom-sidebar">
+  <h5>??? Feature Info</h5>
+  <div id="sidebar-info"><em>Click a feature to view details here.</em></div>
+</div>
+<div class="custom-sidebar">
+  <h5>🗺️ Map Info</h5>
+  <div id="sidebar-info"><em>Click a feature to view details.</em></div>
+</div>
+
+        </div>
+        <script src="js/qgis2web_expressions.js"></script>
+        <script src="js/leaflet.js"></script><script src="js/L.Control.Locate.min.js"></script>
+        <script src="js/leaflet-svg-shape-markers.min.js"></script>
+        <script src="js/leaflet.rotatedMarker.js"></script>
+        <script src="js/leaflet.pattern.js"></script>
+        <script src="js/leaflet-hash.js"></script>
+        <script src="js/Autolinker.min.js"></script>
+        <script src="js/rbush.min.js"></script>
+        <script src="js/labelgun.min.js"></script>
+        <script src="js/labels.js"></script>
+        <script src="js/leaflet-control-geocoder.Geocoder.js"></script>
+        <script src="js/leaflet-measure.js"></script>
+        <script src="js/leaflet-search.js"></script>
+        <script src="data/ConstituencyBoundary_2.js"></script>
+        <script src="data/Schools5KMBuffer_3.js"></script>
+        <script src="data/HealthFacility5KMBuffer_4.js"></script>
+        <script src="data/Schools_5.js"></script>
+        <script src="data/HealthFacilities_6.js"></script>
+        <script>
+        var highlightLayer;
+        function highlightFeature(e) {
+            highlightLayer = e.target;
+
+            if (e.target.feature.geometry.type === 'LineString') {
+              highlightLayer.setStyle({
+                color: '#ffff00',
+              });
+            } else {
+              highlightLayer.setStyle({
+                fillColor: '#ffff00',
+                fillOpacity: 1
+              });
+            }
+            highlightLayer.openPopup();
+        }
+        var map = L.map('map', {
+            zoomControl:true, maxZoom:28, minZoom:1
+        }).fitBounds([[-15.80530499264183,24.99493225658552],[-11.973841046680402,32.16873709157713]]);
+        var hash = new L.Hash(map);
+        map.attributionControl.setPrefix('<a href="https://github.com/tomchadwin/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>');
+        var autolinker = new Autolinker({truncate: {length: 30, location: 'smart'}});
+        L.control.locate({locateOptions: {maxZoom: 19}}).addTo(map);
+        var measureControl = new L.Control.Measure({
+            position: 'topleft',
+            primaryLengthUnit: 'meters',
+            secondaryLengthUnit: 'kilometers',
+            primaryAreaUnit: 'sqmeters',
+            secondaryAreaUnit: 'hectares'
+        });
+        measureControl.addTo(map);
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0]
+        .innerHTML = '';
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0]
+        .className += ' fas fa-ruler';
+        var bounds_group = new L.featureGroup([]);
+        function setBounds() {
+        }
+        map.createPane('pane_GoogleSatellite_0');
+        map.getPane('pane_GoogleSatellite_0').style.zIndex = 400;
+        var layer_GoogleSatellite_0 = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+            pane: 'pane_GoogleSatellite_0',
+            opacity: 1.0,
+            attribution: '',
+            minZoom: 1,
+            maxZoom: 28,
+        });
+        layer_GoogleSatellite_0;
+        map.addLayer(layer_GoogleSatellite_0);
+        map.createPane('pane_GoogleMaps_1');
+        map.getPane('pane_GoogleMaps_1').style.zIndex = 401;
+        var layer_GoogleMaps_1 = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+            pane: 'pane_GoogleMaps_1',
+            opacity: 1.0,
+            attribution: '',
+            minZoom: 1,
+            maxZoom: 28,
+        });
+        layer_GoogleMaps_1;
+        map.addLayer(layer_GoogleMaps_1);
+        function pop_ConstituencyBoundary_2(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (i in e.target._eventParents) {
+                        e.target._eventParents[i].resetStyle(e.target);
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2"><strong>NAME: </strong>' + (feature.properties['CONST_NAME'] !== null ? autolinker.link(feature.properties['CONST_NAME'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>Total Population:</strong>' + (feature.properties['Total'] !== null ? autolinker.link(feature.properties['Total'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>Male Population:</strong>' + (feature.properties['Male'] !== null ? autolinker.link(feature.properties['Male'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>Female Population:</strong>' + (feature.properties['Female'] !== null ? autolinker.link(feature.properties['Female'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>Total Number Of Community Schools:</strong>' + (feature.properties['Community'] !== null ? autolinker.link(feature.properties['Community'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>Total Number Of Nursery Schools:</strong>' + (feature.properties['Nursery'] !== null ? autolinker.link(feature.properties['Nursery'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>Total Number Of Primary Schools:</strong>' + (feature.properties['Primary'] !== null ? autolinker.link(feature.properties['Primary'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>Total Number Of Primary & Secondary Schools:</strong>' + (feature.properties['Primary__'] !== null ? autolinker.link(feature.properties['Primary__'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>Total Number Of Secondary Schools:</strong>' + (feature.properties['Secondary'] !== null ? autolinker.link(feature.properties['Secondary'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>Total Number Of Special Education Schools:</strong>' + (feature.properties['Special_Ed'] !== null ? autolinker.link(feature.properties['Special_Ed'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>Total Number Of  Schools:</strong>' + (feature.properties['Grand_Tota'] !== null ? autolinker.link(feature.properties['Grand_Tota'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>Total Number Of Level 1 Health Facilities:</strong>' + (feature.properties['F1st_Level'] !== null ? autolinker.link(feature.properties['F1st_Level'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>Total Number Of Level 2 Health Facilities:</strong>' + (feature.properties['F2nd_Level'] !== null ? autolinker.link(feature.properties['F2nd_Level'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>Total Number Of Level 3 Health Facilities:</strong>' + (feature.properties['F3rd_Level'] !== null ? autolinker.link(feature.properties['F3rd_Level'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>Total Number Of Health Post:</strong>' + (feature.properties['Health_Pos'] !== null ? autolinker.link(feature.properties['Health_Pos'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>Total Number Of Mini Hospitals:</strong>' + (feature.properties['Mini_Hospi'] !== null ? autolinker.link(feature.properties['Mini_Hospi'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>Total Number Of Rural Health Centres:</strong>' + (feature.properties['Rural_Heal'] !== null ? autolinker.link(feature.properties['Rural_Heal'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>Total Number Of Urban Health Centres:</strong>' + (feature.properties['Urban_Heal'] !== null ? autolinker.link(feature.properties['Urban_Heal'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>Total Number Of  Health Facilities:</strong>' + (feature.properties['Heath_Tota'] !== null ? autolinker.link(feature.properties['Heath_Tota'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            layer.onEachFeature = onEachFeature; // removed bindPopup and added sidebar updatepopupContent, {maxHeight: 400});
+        }
+
+        function style_ConstituencyBoundary_2_0() {
+            return {
+                pane: 'pane_ConstituencyBoundary_2',
+                opacity: 1,
+                color: 'rgba(195,9,136,1.0)',
+                dashArray: '',
+                lineCap: 'square',
+                lineJoin: 'bevel',
+                weight: 2.0,
+                fillOpacity: 0,
+                interactive: true,
+            }
+        }
+        map.createPane('pane_ConstituencyBoundary_2');
+        map.getPane('pane_ConstituencyBoundary_2').style.zIndex = 402;
+        map.getPane('pane_ConstituencyBoundary_2').style['mix-blend-mode'] = 'normal';
+        var layer_ConstituencyBoundary_2 = new L.geoJson(json_ConstituencyBoundary_2, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_ConstituencyBoundary_2',
+            layerName: 'layer_ConstituencyBoundary_2',
+            pane: 'pane_ConstituencyBoundary_2',
+            onEachFeature: pop_ConstituencyBoundary_2,
+            style: style_ConstituencyBoundary_2_0,
+        });
+        bounds_group.addLayer(layer_ConstituencyBoundary_2);
+        map.addLayer(layer_ConstituencyBoundary_2);
+        function pop_Schools5KMBuffer_3(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (i in e.target._eventParents) {
+                        e.target._eventParents[i].resetStyle(e.target);
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2"><strong>NAME:</strong>' + (feature.properties['CONST_NAME'] !== null ? autolinker.link(feature.properties['CONST_NAME'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>Households serviced within 5Km Buffer:</strong>' + (feature.properties['Count_'] !== null ? autolinker.link(feature.properties['Count_'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong> Households not  serviced within 5Km Buffer:</strong>' + (feature.properties['Not_servd'] !== null ? autolinker.link(feature.properties['Not_servd'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>Household Total:</strong>' + (feature.properties['t2'] !== null ? autolinker.link(feature.properties['t2'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>Percentage Household Seviced within 5KM buffer: </strong>' + (feature.properties['per'] !== null ? autolinker.link(feature.properties['per'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            layer.onEachFeature = onEachFeature; // removed bindPopup and added sidebar updatepopupContent, {maxHeight: 400});
+        }
+
+        function style_Schools5KMBuffer_3_0() {
+            return {
+                pane: 'pane_Schools5KMBuffer_3',
+                opacity: 1,
+                color: 'rgba(31,120,180,1.0)',
+                dashArray: '',
+                lineCap: 'square',
+                lineJoin: 'bevel',
+                weight: 1.0,
+                fillOpacity: 0,
+                interactive: true,
+            }
+        }
+        map.createPane('pane_Schools5KMBuffer_3');
+        map.getPane('pane_Schools5KMBuffer_3').style.zIndex = 403;
+        map.getPane('pane_Schools5KMBuffer_3').style['mix-blend-mode'] = 'normal';
+        var layer_Schools5KMBuffer_3 = new L.geoJson(json_Schools5KMBuffer_3, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_Schools5KMBuffer_3',
+            layerName: 'layer_Schools5KMBuffer_3',
+            pane: 'pane_Schools5KMBuffer_3',
+            onEachFeature: pop_Schools5KMBuffer_3,
+            style: style_Schools5KMBuffer_3_0,
+        });
+        bounds_group.addLayer(layer_Schools5KMBuffer_3);
+        map.addLayer(layer_Schools5KMBuffer_3);
+        function pop_HealthFacility5KMBuffer_4(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (i in e.target._eventParents) {
+                        e.target._eventParents[i].resetStyle(e.target);
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2"><strong>Name:</strong>' + (feature.properties['CONST_NAME'] !== null ? autolinker.link(feature.properties['CONST_NAME'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>Household serviced within 5KM Buffer:</strong>' + (feature.properties['Count_'] !== null ? autolinker.link(feature.properties['Count_'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>Household not serviced within 5KM Buffer:</strong>' + (feature.properties['nt_sv'] !== null ? autolinker.link(feature.properties['nt_sv'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>Total Households:</strong>' + (feature.properties['total'] !== null ? autolinker.link(feature.properties['total'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>Percentage Household serviced within 5KM Buffer: </strong>' + (feature.properties['perc'] !== null ? autolinker.link(feature.properties['perc'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            layer.onEachFeature = onEachFeature; // removed bindPopup and added sidebar updatepopupContent, {maxHeight: 400});
+        }
+
+        function style_HealthFacility5KMBuffer_4_0() {
+            return {
+                pane: 'pane_HealthFacility5KMBuffer_4',
+                opacity: 1,
+                color: 'rgba(235,217,23,1.0)',
+                dashArray: '',
+                lineCap: 'square',
+                lineJoin: 'bevel',
+                weight: 1.0,
+                fillOpacity: 0,
+                interactive: true,
+            }
+        }
+        map.createPane('pane_HealthFacility5KMBuffer_4');
+        map.getPane('pane_HealthFacility5KMBuffer_4').style.zIndex = 404;
+        map.getPane('pane_HealthFacility5KMBuffer_4').style['mix-blend-mode'] = 'normal';
+        var layer_HealthFacility5KMBuffer_4 = new L.geoJson(json_HealthFacility5KMBuffer_4, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_HealthFacility5KMBuffer_4',
+            layerName: 'layer_HealthFacility5KMBuffer_4',
+            pane: 'pane_HealthFacility5KMBuffer_4',
+            onEachFeature: pop_HealthFacility5KMBuffer_4,
+            style: style_HealthFacility5KMBuffer_4_0,
+        });
+        bounds_group.addLayer(layer_HealthFacility5KMBuffer_4);
+        map.addLayer(layer_HealthFacility5KMBuffer_4);
+        function pop_Schools_5(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (i in e.target._eventParents) {
+                        e.target._eventParents[i].resetStyle(e.target);
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2"><strong>School_Nam</strong>' + (feature.properties['School_Nam'] !== null ? autolinker.link(feature.properties['School_Nam'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>School_Typ</strong>' + (feature.properties['School_Typ'] !== null ? autolinker.link(feature.properties['School_Typ'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            layer.onEachFeature = onEachFeature; // removed bindPopup and added sidebar updatepopupContent, {maxHeight: 400});
+        }
+
+        function style_Schools_5_0() {
+            return {
+                pane: 'pane_Schools_5',
+                shape: 'square',
+                radius: 3.2,
+                opacity: 1,
+                color: 'rgba(8,8,8,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(0,230,0,1.0)',
+                interactive: true,
+            }
+        }
+        map.createPane('pane_Schools_5');
+        map.getPane('pane_Schools_5').style.zIndex = 405;
+        map.getPane('pane_Schools_5').style['mix-blend-mode'] = 'normal';
+        var layer_Schools_5 = new L.geoJson(json_Schools_5, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_Schools_5',
+            layerName: 'layer_Schools_5',
+            pane: 'pane_Schools_5',
+            onEachFeature: pop_Schools_5,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.shapeMarker(latlng, style_Schools_5_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_Schools_5);
+        map.addLayer(layer_Schools_5);
+        function pop_HealthFacilities_6(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (i in e.target._eventParents) {
+                        e.target._eventParents[i].resetStyle(e.target);
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2"><strong>Name</strong><br />' + (feature.properties['Name'] !== null ? autolinker.link(feature.properties['Name'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>Type</strong><br />' + (feature.properties['Type'] !== null ? autolinker.link(feature.properties['Type'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            layer.onEachFeature = onEachFeature; // removed bindPopup and added sidebar updatepopupContent, {maxHeight: 400});
+        }
+
+        function style_HealthFacilities_6_0() {
+            return {
+                pane: 'pane_HealthFacilities_6',
+                radius: 4.4,
+                opacity: 1,
+                color: 'rgba(255,255,255,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(227,26,28,1.0)',
+                interactive: true,
+            }
+        }
+        map.createPane('pane_HealthFacilities_6');
+        map.getPane('pane_HealthFacilities_6').style.zIndex = 406;
+        map.getPane('pane_HealthFacilities_6').style['mix-blend-mode'] = 'normal';
+        var layer_HealthFacilities_6 = new L.geoJson(json_HealthFacilities_6, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_HealthFacilities_6',
+            layerName: 'layer_HealthFacilities_6',
+            pane: 'pane_HealthFacilities_6',
+            onEachFeature: pop_HealthFacilities_6,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_HealthFacilities_6_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_HealthFacilities_6);
+        map.addLayer(layer_HealthFacilities_6);
+        var osmGeocoder = new L.Control.Geocoder({
+            collapsed: true,
+            position: 'topleft',
+            text: 'Search',
+            title: 'Testing'
+        }).addTo(map);
+        document.getElementsByClassName('leaflet-control-geocoder-icon')[0]
+        .className += ' fa fa-search';
+        document.getElementsByClassName('leaflet-control-geocoder-icon')[0]
+        .title += 'Search for a place';
+        var baseMaps = {};
+        L.control.layers(baseMaps,{'<img src="legend/HealthFacilities_6.png" /> Health Facilities': layer_HealthFacilities_6,'<img src="legend/Schools_5.png" /> Schools': layer_Schools_5,'<img src="legend/HealthFacility5KMBuffer_4.png" /> Health Facility 5KM Buffer': layer_HealthFacility5KMBuffer_4,'<img src="legend/Schools5KMBuffer_3.png" /> Schools 5KM Buffer': layer_Schools5KMBuffer_3,'<img src="legend/ConstituencyBoundary_2.png" /> Constituency Boundary': layer_ConstituencyBoundary_2,"Google Maps": layer_GoogleMaps_1,"Google Satellite": layer_GoogleSatellite_0,},{collapsed:false}).addTo(map);
+        setBounds();
+        var i = 0;
+        layer_ConstituencyBoundary_2.eachLayer(function(layer) {
+            var context = {
+                feature: layer.feature,
+                variables: {}
+            };
+            layer.bindTooltip((layer.feature.properties['CONST_NAME'] !== null?String('<div style="color: #323232; font-size: 10pt; font-family: \'Trebuchet MS\', sans-serif;">' + layer.feature.properties['CONST_NAME']) + '</div>':''), {permanent: true, offset: [-0, -16], className: 'css_ConstituencyBoundary_2'});
+            labels.push(layer);
+            totalMarkers += 1;
+              layer.added = true;
+              addLabel(layer, i);
+              i++;
+        });
+        map.addControl(new L.Control.Search({
+            layer: layer_ConstituencyBoundary_2,
+            initial: false,
+            hideMarkerOnCollapse: true,
+            propertyName: 'CONST_NAME'}));
+        document.getElementsByClassName('search-button')[0].className +=
+         ' fa fa-binoculars';
+        resetLabels([layer_ConstituencyBoundary_2]);
+        map.on("zoomend", function(){
+            resetLabels([layer_ConstituencyBoundary_2]);
+        });
+        map.on("layeradd", function(){
+            resetLabels([layer_ConstituencyBoundary_2]);
+        });
+        map.on("layerremove", function(){
+            resetLabels([layer_ConstituencyBoundary_2]);
+        });
+        </script>
+    </body>
+</html>
